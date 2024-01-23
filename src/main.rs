@@ -1,7 +1,7 @@
 use ndarray as nd;
-use serde::Serialize;
-use serde_json;
-use std::fs;
+// use serde::Serialize;
+// use serde_json;
+// use std::fs;
 
 struct Network {
     neurons: Vec<LeakyIntegrateAndFireNeuron>,
@@ -65,18 +65,25 @@ impl ForwardPass {
                         [[self.i_step + 1, idx]] =
                         memory_next;
                     let mut spikes_next_slice =
-                        self.spikes.slice(nd::s![
+                        self.spikes.slice_mut(nd::s![
                             self.i_step + 1,
                             ..
                         ]);
-                    let weights_slice = &self
+                    let tmp = &spikes_next_slice
+                        * &self
                             .network
                             .weights
-                            .slice(nd::s![idx, ..]);
-                    spikes_next_slice +=
-                        &spikes_next_slice * &weights_slice;
+                            .slice(nd::s![idx, ..])
+                        * spike_next;
+                    spikes_next_slice += &tmp;
                 },
             );
+    }
+    fn run(&mut self) {
+        for step in 0..self.n_steps - 1 {
+            self.i_step = step;
+            self.step();
+        }
     }
 }
 
@@ -124,13 +131,14 @@ fn main() {
         })
         .collect::<Vec<_>>();
     let weights = nd::arr2(&[[1.0, 1.0], [1.0, 1.0]]);
-    let mut network = Network::new(neurons, weights);
-    let mut spikes = nd::Array2::zeros([
+    let network = Network::new(neurons, weights);
+    let spikes = nd::Array2::zeros([
         n_steps,
         network.n_neurons(),
     ]);
 
-    let forward_pass =
+    let mut forward_pass =
         ForwardPass::new(network, spikes, n_steps);
+    forward_pass.run();
     dbg!(forward_pass.memory);
 }
