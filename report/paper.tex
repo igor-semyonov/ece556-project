@@ -1,0 +1,75 @@
+\documentclass[12pt,english]{article}
+\input{preamble.tex}
+
+\title{
+    A Spiking Neural Network Implemented in Rust
+}
+\author{Igor Semyonov}
+\author{Kirby Steiner}
+\affil{George Mason University}
+% \date{}
+
+\begin{document}
+
+% \pagestyle{fancy}
+% \fancyhead{}
+% \fancyhead[C]{\class}
+% \fancyfoot{}
+% \fancyfoot[C]{\class}
+
+% the following block, somehow, makes the title appear centered vertically on a cover page.
+\null  % Empty line
+\nointerlineskip  % No skip for prev line
+\vfill
+\let\snewpage \newpage
+\let\newpage \relax
+\maketitle
+\thispagestyle{fancy}
+\let \newpage \snewpage
+\vfill
+\break % page break
+
+% include page numbers after title page
+\fancyfoot{}
+\fancyfoot[C]{
+    \thepage \\
+    \vspace{1ex}
+    \class
+}
+
+\begin{abstract}
+    In this work, we explore writing a spiking neural network engine in the Rust programming language.
+    We will consider possible methods for training including back propagation and neural generative coding.
+    Our implementation is based in part on the work of Eshraghian, et al. \cite{snntorch} and the tutorials of the associated snntorch python package.
+    We will profile the code, searching for and comparing optimization strategies.
+\end{abstract}
+
+\section{Background}
+
+placeholder for background.
+
+\section{Implementation}
+
+Placeholder.
+
+\section{Profiling and Analysis}
+
+placeholder
+
+\section{Results}
+
+Placeholder
+
+\section{Conclusion}
+
+Placeholder
+
+%\section*{References}
+% \nocite{detection-algorithms}
+% \nocite{hybrid-sparcity}
+\bibliographystyle{siam}
+\bibliography{refs}
+
+%\layout*
+
+\end{document}

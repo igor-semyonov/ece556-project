@@ -1,0 +1,44 @@
+\usepackage{authblk}
+
+\usepackage[margin=1.0in]{geometry}
+
+\usepackage{outlines}
+\usepackage{tabularx}
+
+%\usepackage{layout}
+
+\usepackage{hyperref}
+
+\usepackage{fancyhdr}
+
+\usepackage{amsmath,amsfonts,amssymb,mathrsfs,mathtools}
+\usepackage{mathspec}
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+\DeclarePairedDelimiter\norm{\lVert}{\rVert}%
+% Swap the definition of \abs* and \norm*, so that \abs
+% and \norm resizes the size of the brackets, and the 
+% starred version does not.
+\makeatletter
+\let\oldabs\abs
+\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+%
+\let\oldnorm\norm
+\def\norm{\@ifstar{\oldnorm}{\oldnorm*}}
+\makeatother
+%%%%%%%%%%%%%%%%%%%
+
+% references for equations
+\makeatletter
+\def\tagform@#1{\maketag@@@{\bfseries(\ignorespaces#1\unskip\@@italiccorr)}}
+\renewcommand{\eqref}[1]{\textup{{\normalfont(\ref{#1}}\normalfont)}}
+\makeatother
+
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\def \wfwf {0.5}  % wrapfigure width factor multiplied by textwidth
+\def \wfwfImage {0.46}  % wrapfigure width factor multiplied by textwidth
+\def \subfigwidth {0.33}
+\def \subfigimagewidth {1}
+
+\input{./macros}
