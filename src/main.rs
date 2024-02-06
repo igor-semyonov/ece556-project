@@ -1,16 +1,20 @@
 use ndarray as nd;
-// use serde::Serialize;
-// use serde_json;
-// use std::fs;
+use serde::{Serialize, Deserialize};
+use serde_json;
+use std::fs;
 
+#[derive(Serialize, Deserialize)]
 struct Network {
-    neurons: Vec<LeakyIntegrateAndFireNeuron>,
+    neurons:
+        Vec<LeakyIntegrateAndFireNeuron>,
     weights: nd::Array2<f64>, // [i,j] is the weight for spikes from neuron i to j
 }
 
 impl Network {
     fn new(
-        neurons: Vec<LeakyIntegrateAndFireNeuron>,
+        neurons: Vec<
+            LeakyIntegrateAndFireNeuron,
+        >,
         weights: nd::Array2<f64>,
     ) -> Self {
         Network { neurons, weights }
@@ -20,6 +24,7 @@ impl Network {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 struct ForwardPass {
     network: Network,
     memory: nd::Array2<f64>, // [i, j] is potential of the jth neuron at time i
@@ -58,24 +63,41 @@ impl ForwardPass {
             .zip(spikes_current)
             .enumerate()
             .for_each(
-                |(idx, (neuron, spike_current))| {
-                    let (memory_next, spike_next) =
-                        neuron.step(*spike_current);
-                    self.memory
-                        [[self.i_step + 1, idx]] =
-                        memory_next;
-                    let mut spikes_next_slice =
-                        self.spikes.slice_mut(nd::s![
+                |(
+                    idx,
+                    (neuron, spike_current),
+                )| {
+                    let (
+                        memory_next,
+                        spike_next,
+                    ) = neuron.step(
+                        *spike_current,
+                    );
+                    self.memory[[
+                        self.i_step + 1,
+                        idx,
+                    ]] = memory_next;
+                    let mut
+                    spikes_next_slice = self
+                        .spikes
+                        .slice_mut(nd::s![
                             self.i_step + 1,
                             ..
                         ]);
-                    let tmp = &spikes_next_slice
-                        * &self
-                            .network
-                            .weights
-                            .slice(nd::s![idx, ..])
-                        * spike_next;
-                    spikes_next_slice += &tmp;
+                    let tmp =
+                        &spikes_next_slice
+                            * &self
+                                .network
+                                .weights
+                                .slice(
+                                    nd::s![
+                                        idx,
+                                        ..
+                                    ],
+                                )
+                            * spike_next;
+                    spikes_next_slice +=
+                        &tmp;
                 },
             );
     }
@@ -87,7 +109,7 @@ impl ForwardPass {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct LeakyIntegrateAndFireNeuron {
     u: f64, //membrane potential
     beta: f64,
@@ -103,22 +125,28 @@ impl LeakyIntegrateAndFireNeuron {
         Self { u, beta, u_threshold }
     }
 
-    fn step(&self, spike_in: f64) -> (f64, f64) {
-        let mut u_next = self.beta * self.u + spike_in;
+    fn step(
+        &self,
+        spike_in: f64,
+    ) -> (f64, f64) {
+        let mut u_next =
+            self.beta * self.u + spike_in;
         let mut spike_out = 0.0;
         if u_next >= self.u_threshold {
             u_next -= self.u_threshold;
             spike_out = 1.0;
         }
-        let (u_next, spike_out) = (u_next, spike_out);
+        let (u_next, spike_out) =
+            (u_next, spike_out);
         (u_next, spike_out)
     }
 }
 
 fn main() {
     let n_steps = 200usize;
-    let mut spikes_in =
-        (0..n_steps).map(|_| 0.0).collect::<Vec<_>>();
+    let mut spikes_in = (0..n_steps)
+        .map(|_| 0.0)
+        .collect::<Vec<_>>();
     spikes_in[5] = 1.9;
     spikes_in[9] = 1.9;
     spikes_in[20] = 1.9;
@@ -130,15 +158,23 @@ fn main() {
             )
         })
         .collect::<Vec<_>>();
-    let weights = nd::arr2(&[[1.0, 1.0], [1.0, 1.0]]);
-    let network = Network::new(neurons, weights);
+    let weights =
+        nd::arr2(&[[1.0, 1.0], [1.0, 1.0]]);
+    let network =
+        Network::new(neurons, weights);
     let spikes = nd::Array2::zeros([
         n_steps,
         network.n_neurons(),
     ]);
 
-    let mut forward_pass =
-        ForwardPass::new(network, spikes, n_steps);
+    let mut forward_pass = ForwardPass::new(
+        network, spikes, n_steps,
+    );
     forward_pass.run();
-    dbg!(forward_pass.memory);
+
+    let json_string = serde_json::to_string(
+        &forward_pass,
+    )
+    .unwrap();
+    fs::write("./spikes.json", &json_string);
 }
