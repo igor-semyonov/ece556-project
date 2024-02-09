@@ -1,15 +1,47 @@
 use ndarray as nd;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct LeakyIntegrateAndFireNeuron {
+    u: f64, //membrane potential
+    beta: f64,
+    u_threshold: f64,
+}
+impl LeakyIntegrateAndFireNeuron {
+    fn new(
+        u: f64,
+        beta: f64,
+        u_threshold: f64,
+    ) -> Self {
+        Self { u, beta, u_threshold }
+    }
+
+    fn step(
+        &mut self,
+        spike_in: f64,
+    ) -> (f64, f64) {
+        let mut u_next =
+            self.beta * self.u + spike_in;
+        let mut spike_out = 0.0;
+        if u_next >= self.u_threshold {
+            u_next -= self.u_threshold;
+            spike_out = 1.0;
+        }
+        let (u_next, spike_out) =
+            (u_next, spike_out);
+        self.u = u_next;
+        (u_next, spike_out)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct Network {
     neurons:
         Vec<LeakyIntegrateAndFireNeuron>,
     weights: nd::Array2<f64>, // [i,j] is the weight for spikes from neuron i to j
 }
-
 impl Network {
     fn new(
         neurons: Vec<
@@ -24,24 +56,29 @@ impl Network {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct ForwardPass {
+#[derive(Debug, Serialize, Deserialize)]
+struct Simulation {
     network: Network,
     memory: nd::Array2<f64>, // [i, j] is potential of the jth neuron at time i
     spikes: nd::Array2<f64>, // spikes [i, j] is the spike amount received by the jth neuron at i
     n_steps: usize,
     i_step: usize,
 }
-impl ForwardPass {
+impl Simulation {
     fn new(
         network: Network,
         spikes: nd::Array2<f64>,
         n_steps: usize,
     ) -> Self {
-        let memory = nd::Array2::zeros([
-            n_steps,
-            network.n_neurons(),
-        ]);
+        let mut memory =
+            nd::Array2::zeros([
+                n_steps,
+                network.n_neurons(),
+            ]);
+        for idx in 0..network.n_neurons() {
+            memory[[0, idx]] =
+                network.neurons[0].u;
+        }
         let i_step = 0usize;
         Self {
             network,
@@ -65,7 +102,7 @@ impl ForwardPass {
             .for_each(
                 |(
                     idx,
-                    (neuron, spike_current),
+                    (mut neuron, spike_current),
                 )| {
                     let (
                         memory_next,
@@ -109,47 +146,8 @@ impl ForwardPass {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-struct LeakyIntegrateAndFireNeuron {
-    u: f64, //membrane potential
-    beta: f64,
-    u_threshold: f64,
-}
-
-impl LeakyIntegrateAndFireNeuron {
-    fn new(
-        u: f64,
-        beta: f64,
-        u_threshold: f64,
-    ) -> Self {
-        Self { u, beta, u_threshold }
-    }
-
-    fn step(
-        &self,
-        spike_in: f64,
-    ) -> (f64, f64) {
-        let mut u_next =
-            self.beta * self.u + spike_in;
-        let mut spike_out = 0.0;
-        if u_next >= self.u_threshold {
-            u_next -= self.u_threshold;
-            spike_out = 1.0;
-        }
-        let (u_next, spike_out) =
-            (u_next, spike_out);
-        (u_next, spike_out)
-    }
-}
-
 fn main() {
-    let n_steps = 200usize;
-    let mut spikes_in = (0..n_steps)
-        .map(|_| 0.0)
-        .collect::<Vec<_>>();
-    spikes_in[5] = 1.9;
-    spikes_in[9] = 1.9;
-    spikes_in[20] = 1.9;
+    let n_steps = 4usize;
 
     let neurons = (0..=1)
         .map(|_| {
@@ -158,6 +156,7 @@ fn main() {
             )
         })
         .collect::<Vec<_>>();
+    
     let weights =
         nd::arr2(&[[1.0, 1.0], [1.0, 1.0]]);
     let network =
@@ -167,14 +166,18 @@ fn main() {
         network.n_neurons(),
     ]);
 
-    let mut forward_pass = ForwardPass::new(
+    let mut simulation = Simulation::new(
         network, spikes, n_steps,
     );
-    forward_pass.run();
+    simulation.run();
+    dbg!(&simulation);
 
-    let json_string = serde_json::to_string(
-        &forward_pass,
+    let json_string =
+        serde_json::to_string(&simulation)
+            .unwrap();
+    fs::write(
+        "./simulation.json",
+        &json_string,
     )
     .unwrap();
-    fs::write("./spikes.json", &json_string);
 }
