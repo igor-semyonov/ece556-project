@@ -5,12 +5,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def json_to_array(json_dict: dict[str, int | list[int]]):
+    shape = json_dict["dim"]
+    data = json_dict['data']
+    return np.array(data).reshape(shape)
+
+
 def main():
-    sim_data = json.loads(Path("./sim.json").read_text())
-    memory, spikes_out, spikes_in = sim_data
+    simulation = json.loads(Path("./simulation.json").read_text())
+
+    memory = json_to_array(simulation["memory"])
+
     fig = plt.figure()
     ax = fig.add_subplot()
-    ax.plot(memory)
+    for mem in memory.T:
+        ax.plot(mem)
 
     plt.get_current_fig_manager().window.showMaximized()
     plt.show()

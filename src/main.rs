@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize,
+)]
 struct LeakyIntegrateAndFireNeuron {
     u: f64, //membrane potential
     beta: f64,
@@ -19,19 +21,18 @@ impl LeakyIntegrateAndFireNeuron {
     }
 
     fn step(
-        &mut self,
+        &self,
         spike_in: f64,
     ) -> (f64, f64) {
         let mut u_next =
             self.beta * self.u + spike_in;
         let mut spike_out = 0.0;
-        if u_next >= self.u_threshold {
+        if self.u >= self.u_threshold {
             u_next -= self.u_threshold;
             spike_out = 1.0;
         }
         let (u_next, spike_out) =
             (u_next, spike_out);
-        self.u = u_next;
         (u_next, spike_out)
     }
 }
@@ -93,6 +94,7 @@ impl Simulation {
             .spikes
             .slice(nd::s![self.i_step, ..])
             .dot(&self.network.weights);
+        dbg!(spikes_current);
         self.network
             .neurons
             .clone()
@@ -102,7 +104,7 @@ impl Simulation {
             .for_each(
                 |(
                     idx,
-                    (mut neuron, spike_current),
+                    (neuron, spike_current),
                 )| {
                     let (
                         memory_next,
@@ -110,31 +112,34 @@ impl Simulation {
                     ) = neuron.step(
                         *spike_current,
                     );
+                    self.network.neurons
+                        [idx]
+                        .u = memory_next;
                     self.memory[[
                         self.i_step + 1,
                         idx,
                     ]] = memory_next;
-                    let mut
-                    spikes_next_slice = self
-                        .spikes
-                        .slice_mut(nd::s![
-                            self.i_step + 1,
-                            ..
-                        ]);
-                    let tmp =
-                        &spikes_next_slice
-                            * &self
-                                .network
-                                .weights
-                                .slice(
-                                    nd::s![
-                                        idx,
-                                        ..
-                                    ],
-                                )
-                            * spike_next;
-                    spikes_next_slice +=
-                        &tmp;
+                    // let mut
+                    // spikes_next_slice = self
+                    //     .spikes
+                    //     .slice_mut(nd::s![
+                    //         self.i_step + 1,
+                    //         ..
+                    //     ]);
+                    // let tmp =
+                    //     &spikes_next_slice
+                    //         * &self
+                    //             .network
+                    //             .weights
+                    //             .slice(
+                    //                 nd::s![
+                    //                     idx,
+                    //                     ..
+                    //                 ],
+                    //             )
+                    //         * spike_next;
+                    // spikes_next_slice +=
+                    //     &tmp;
                 },
             );
     }
@@ -147,7 +152,7 @@ impl Simulation {
 }
 
 fn main() {
-    let n_steps = 4usize;
+    let n_steps = 20usize;
 
     let neurons = (0..=1)
         .map(|_| {
@@ -156,21 +161,22 @@ fn main() {
             )
         })
         .collect::<Vec<_>>();
-    
+
     let weights =
-        nd::arr2(&[[1.0, 1.0], [1.0, 1.0]]);
+        nd::arr2(&[[1.0, 0.5], [0.5, 1.0]]);
     let network =
         Network::new(neurons, weights);
-    let spikes = nd::Array2::zeros([
+    let mut spikes = nd::Array2::zeros([
         n_steps,
         network.n_neurons(),
     ]);
+    spikes[[10, 0]] = 1.0;
 
     let mut simulation = Simulation::new(
         network, spikes, n_steps,
     );
     simulation.run();
-    dbg!(&simulation);
+    // dbg!(&simulation);
 
     let json_string =
         serde_json::to_string(&simulation)
