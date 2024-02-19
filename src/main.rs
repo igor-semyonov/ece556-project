@@ -41,57 +41,42 @@ impl LeakyIntegrateAndFireNeuron {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Network {
+struct Layer {
     neurons:
         Vec<LeakyIntegrateAndFireNeuron>,
-    weights: nd::Array2<f64>, // [i,j] is the weight for spikes from neuron i to j
-}
-impl Network {
-    fn new(
-        neurons: Vec<
-            LeakyIntegrateAndFireNeuron,
-        >,
-        weights: nd::Array2<f64>,
-    ) -> Self {
-        Network { neurons, weights }
-    }
-    fn n_neurons(&self) -> usize {
-        self.neurons.len()
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Simulation {
-    network: Network,
+    internal_weights: nd::Array2<f64>, // weights for neurons internal to this layer
     memory: nd::Array2<f64>, // [i, j] is potential of the jth neuron at time i
     spikes_in: nd::Array2<f64>, // spikes [i, j] is the spike amount received by the jth neuron at i
     spikes_out: nd::Array2<f64>, // spikes [i, j] is the spike amount produced by the jth neuron at i
     n_steps: usize,
     i_step: usize,
 }
-impl Simulation {
+impl Layer {
     fn new(
-        network: Network,
+        neurons: Vec<
+            LeakyIntegrateAndFireNeuron,
+        >,
+        internal_weights: nd::Array2<f64>,
         spikes_in: nd::Array2<f64>,
         n_steps: usize,
     ) -> Self {
         let mut memory =
             nd::Array2::zeros([
                 n_steps,
-                network.n_neurons(),
+                neurons.len(),
             ]);
         let spikes_out =
             nd::Array2::zeros([
                 n_steps,
-                network.n_neurons(),
+                neurons.len(),
             ]);
-        for idx in 0..network.n_neurons() {
-            memory[[0, idx]] =
-                network.neurons[0].u;
+        for idx in 0..neurons.len() {
+            memory[[0, idx]] = neurons[0].u;
         }
         let i_step = 0usize;
         Self {
-            network,
+            neurons,
+            internal_weights,
             memory,
             spikes_in,
             spikes_out,
@@ -99,13 +84,15 @@ impl Simulation {
             i_step,
         }
     }
+    fn n_neurons(&self) -> usize {
+        self.neurons.len()
+    }
     fn step(self: &mut Self) {
         let current_spikes_in = self
             .spikes_in
             .slice(nd::s![self.i_step, ..])
             .into_owned();
-        self.network
-            .neurons
+        self.neurons
             .clone()
             .into_iter()
             .zip(current_spikes_in)
@@ -120,7 +107,7 @@ impl Simulation {
                         spike_out_next,
                     ) = neuron
                         .step(spike_current);
-                    self.network.neurons
+                    self.neurons
                         [idx]
                         .u = memory_next;
                     self.memory[[
@@ -128,7 +115,6 @@ impl Simulation {
                         idx,
                     ]] = memory_next;
                     for jdx in 0..self
-                        .network
                         .n_neurons()
                     {
                         self.spikes_in[[
@@ -136,8 +122,7 @@ impl Simulation {
                             jdx,
                         ]] += spike_out_next
                             * self
-                                .network
-                                .weights
+                                .internal_weights
                                 [[idx, jdx]];
                     }
                     // let mut
@@ -175,7 +160,7 @@ impl Simulation {
 fn main() {
     let n_steps = 30usize;
 
-    let neurons = (0..=1)
+    let neurons = (0..=2)
         .map(|_| {
             LeakyIntegrateAndFireNeuron::new(
                 1.0, 0.9, 1.5, 0.2,
@@ -183,30 +168,37 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    let weights =
-        nd::arr2(&[[0.0, 1.5], [0.5, 0.0]]);
-    let network =
-        Network::new(neurons, weights);
+    let internal_weights = nd::arr2(&[
+        [0.0, 1.5, 1.0],
+        [0.5, 0.0, 1.0],
+        [0.5, 0.5, 0.0],
+    ]);
     let mut spikes_in = nd::Array2::zeros([
         n_steps,
-        network.n_neurons(),
+        neurons.len(),
     ]);
 
     spikes_in[[5, 0]] = 1.0;
     // spikes_in[[12, 1]] = 1.0;
 
-    let mut simulation = Simulation::new(
-        network, spikes_in, n_steps,
+    let mut layer_0 = Layer::new(
+        neurons,
+        internal_weights,
+        spikes_in,
+        n_steps,
     );
-    simulation.run();
+    layer_0.run();
     // dbg!(&simulation);
 
     let json_string =
-        serde_json::to_string(&simulation)
+        serde_json::to_string(&layer_0)
             .unwrap();
     fs::write(
         "./simulation.json",
         &json_string,
     )
     .unwrap();
+
+    // next layer takes input as spikes_out from previous layer
+    // spikes_in_next = spikes_out.dot(layer_to_layer_weights)
 }
