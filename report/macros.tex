@@ -23,3 +23,42 @@
 \newcommand{\Rn}[1][n]{\mathbb{R}^#1}
 \NewDocumentCommand{\Rnp}{ O{n} O{p} }{\mathbb{R}^#1_#2}
 
+
+\renewcommand{\listfigurename}{Figures}
+
+\lstset
+{
+    language=Rust,
+    basicstyle=\footnotesize,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    showstringspaces=false,
+    tabsize=1,
+    breaklines=true,
+    breakatwhitespace=false,
+    xleftmargin=-8pt,
+    frame=b,
+}
+
+\newcommand{\codefile}[3]{
+    \mdframed[roundcorner=5pt, backgroundcolor=blue!30]
+    \lstinputlisting[caption=$#1$ {#2}, label=#3]{#1}
+    \endmdframed
+}
+\newcommand{\codefilelines}[5]{
+    \mdframed[roundcorner=5pt, backgroundcolor=blue!30]
+    \lstinputlisting[style=colouredRust, linerange={#4-#5}, caption=$#1$ Lines #4-#5 {#2}, label=#3]{#1}
+    \endmdframed
+}
+\lstnewenvironment{code}[2]
+{
+    \mdframed[roundcorner=5pt, backgroundcolor=blue!30]
+    \lstset{
+        caption={#1},
+        label=#2,
+    }
+}
+{
+    \endmdframed
+}

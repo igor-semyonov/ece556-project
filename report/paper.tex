@@ -11,31 +11,7 @@
 
 \begin{document}
 
-% \pagestyle{fancy}
-% \fancyhead{}
-% \fancyhead[C]{\class}
-% \fancyfoot{}
-% \fancyfoot[C]{\class}
-
-% the following block, somehow, makes the title appear centered vertically on a cover page.
-\null  % Empty line
-\nointerlineskip  % No skip for prev line
-\vfill
-\let\snewpage \newpage
-\let\newpage \relax
 \maketitle
-\thispagestyle{fancy}
-\let \newpage \snewpage
-\vfill
-\break % page break
-
-% include page numbers after title page
-\fancyfoot{}
-\fancyfoot[C]{
-    \thepage \\
-    \vspace{1ex}
-    \class
-}
 
 \begin{abstract}
     In this work, we explore writing a spiking neural network engine in the Rust programming language.
@@ -46,30 +22,73 @@
 
 \section{Background}
 
-placeholder for background.
+The project repository is at \href{https://github.com/igor-semyonov/ece556-project}{https://github.com/igor-semyonov/ece556-project}.
 
 \section{Implementation}
 
-Placeholder.
+Currently, the implementation consists of two components: neuron and layer.
+The neuron is a simple leaky integrate and fire (L.I.F.) neuron shown in listing \ref{lst-lif}.
+The LIF has two associated functions: new and step.
+New is the idiomatic way to write an initialization function.
+While it is not necessary, as we can create a LIF struct directly, it allows us to ensure a certain way of creating the struct.
+Also, if we make this framework available to others as a library, we could restrict the struct to be a private object, so users would have to use the $new$ function to create instances of LIF.
 
-\section{Profiling and Analysis}
+The $step$ function uses the current state of the LIF, along with input spikes, to return the next membrane potential value and any output spikes, if applicable.
+Note, this function does not mutate the LIF in place, it produces the output necessary to update the LIF, but does not do so automatically.
+In Rust mutability of variables is strictly controlled and must be managed with care.
+I had to change this function to not mutate the LIF in order to allow for downstream use of the LIF struct.
 
-placeholder
+\codefilelines{../src/main.rs}{
+    Initial spiking neural network implementation
+}{lst-lif}{5}{58}
 
-\section{Results}
+Layer, shown in listing \ref{lst-layer} is the struct which holds a single layer of a network.
+A whole network could also ben encoded as a single layer. 
+A layer contains one or more neurons, internal weights, memory for all neurons, and spikes in and out for all neurons.
+It has three associated functions.
+A $new$ function, which like for LIF, is the intended way to instantiate this struct.
+The $step$ function performs steps for each neuron and records the spikes for the upcoming step as well as new memory, i.e., membrane potentials.
+The $run$ function simply performs the necessary number of steps.
+After this the $layer$ struct contains the results of the simulation.
 
-Placeholder
+The reason we chose to design it like this is to allow for multiple layers to interact with one another.
+Each layer would run its own set of timesteps in sequence.
+Then it would pass the entire set of spikes to the next layer for downstream processing.
 
-\section{Conclusion}
+\codefilelines{../src/main.rs}{
+    Initial spiking neural network implementation
+}{lst-layer}{60}{170}
 
-Placeholder
+\section{Demonstration}
+
+In listing \ref{lst-demo} we show the main function from the rust code which creates 3 neurons, an input spike, and a layer.
+Then we run the layer and export the results to json.
+This is made very easy because we derived the Serialize trait for both LIF and layer.
+We then use a simple python script shown in listing \ref{lst-vis} to visualize the memory.
+The output is shown in figure \ref{fig-mem}
+
+\codefilelines{../src/main.rs}{
+    Initial spiking neural network implementation
+}{lst-demo}{172}{218}
+
+\codefile{../visualize.py}{
+    Visualization script
+}{lst-vis}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{memory}
+    \caption{Memory from 3 neuron layer with a single input spike propegated through to the other neurons.}
+    \label{fig-mem}
+\end{figure}
 
 %\section*{References}
-% \nocite{detection-algorithms}
 % \nocite{hybrid-sparcity}
 \bibliographystyle{siam}
 \bibliography{refs}
 
 %\layout*
+
+\lstlistoflistings
 
 \end{document}
