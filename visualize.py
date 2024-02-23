@@ -22,8 +22,11 @@ def main():
     line_cycler = cycle(["-", "--", "-.", ":"])
     for mem in memory.T:
         ax.plot(mem, linestyle=next(line_cycler))
-    ax.legend(f"Neuron {i}" for i in range(memory.shape[1]))
+    ax.legend(list(f"Neuron {i}" for i in range(memory.shape[1])))
+    ax.set_xlabel("Timestep")
+    ax.set_ylabel("Membrane Potential (some for now unphysical units)")
 
+    plt.savefig("images/memory.png")
     plt.get_current_fig_manager().window.showMaximized()
     plt.show()
 
