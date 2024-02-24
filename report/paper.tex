@@ -43,7 +43,7 @@ I had to change this function to not mutate the LIF in order to allow for downst
 }{lst-lif}{5}{58}
 
 Layer, shown in listing \ref{lst-layer} is the struct which holds a single layer of a network.
-A whole network could also ben encoded as a single layer. 
+A whole network could also be encoded as a single layer. 
 A layer contains one or more neurons, internal weights, memory for all neurons, and spikes in and out for all neurons.
 It has three associated functions.
 A $new$ function, which like for LIF, is the intended way to instantiate this struct.
@@ -52,7 +52,7 @@ The $run$ function simply performs the necessary number of steps.
 After this the $layer$ struct contains the results of the simulation.
 
 The reason we chose to design it like this is to allow for multiple layers to interact with one another.
-Each layer would run its own set of timesteps in sequence.
+Each layer would run its own set of time steps in sequence.
 Then it would pass the entire set of spikes to the next layer for downstream processing.
 
 \codefilelines{../src/main.rs}{
@@ -62,7 +62,7 @@ Then it would pass the entire set of spikes to the next layer for downstream pro
 \section{Demonstration}
 
 In listing \ref{lst-demo} we show the main function from the rust code which creates 3 neurons, an input spike, and a layer.
-Then we run the layer and export the results to json.
+Then we run the layer and export the results to JSON.
 This is made very easy because we derived the Serialize trait for both LIF and layer.
 We then use a simple python script shown in listing \ref{lst-vis} to visualize the memory.
 The output is shown in figure \ref{fig-mem}
@@ -78,9 +78,19 @@ The output is shown in figure \ref{fig-mem}
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{memory}
-    \caption{Memory from 3 neuron layer with a single input spike propegated through to the other neurons.}
+    \caption{Memory from 3-neuron-layer with a single input spike propagated through to the other neurons.}
     \label{fig-mem}
 \end{figure}
+
+\section{Next Steps}
+
+Now that we have a somewhat functional model, we plan to tear it down and build it following the node-cable structure described by Orbia in \cite{NGC}.
+Having built this much in rust already, it should be relatively straight forward to port the NGC architecture to rust, at least the basic components.
+
+I am also considering implementing an evolutionary learning wrapper around the model we build.
+This should be relatively doable, and the concurrency libraries in the rust ecosystem are amazing.
+For other algorithms I have ported to rust, I have been amazed at how easy it is to perform parallel iteration.
+One would think this would be easier in python: a much more high-level language, but with the Rayon crate, I was able to fully utilize all my CPU cores by simply changing one line of code.
 
 %\section*{References}
 % \nocite{hybrid-sparcity}
