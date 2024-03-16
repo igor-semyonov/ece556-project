@@ -20,10 +20,35 @@
     We will profile the code, searching for and comparing optimization strategies.
 \end{abstract}
 
-\section{Background}
-
 The project repository is at \href{https://github.com/igor-semyonov/ece556-project}{https://github.com/igor-semyonov/ece556-project}.
 
+\section{Related Literature}
+Our project is situated at the intersection computer vision with spiking neural networks \cite{Hasan23} and generative neural coding \cite{OrorbiaKifer22} which in turn is influenced by the predictive processing \cite{Clark15, Bubic10, Kveraga07}, Bayesian brain \cite{Knill04, Deneve04, Kersten04}, and free energy \cite{Friston10} literatures.
+
+\subsection{Generative Neural Coding}
+Generative neural coding is a machine learning framework that seeks, ``to create a complete theory of inference and learning that emulates how the brain can learn complex functions from the environment." \cite{Ororbia23_a} This means that learning algorithms must face the same constraints that the brain does. An important implication of this is that the backprop algorithm cannot be used in this framework. While many frameworks approach issues with backprop from a training perspective (i.e. how to differentiate non-continuous spiking signals?), generative neural coding critiques backprop from a biological plausibility perspective.
+
+There are six problems with the backprop from the persepective of biologically plausible machine learning \cite{Ororbia22, Ororbia23_a}.
+\begin{enumerate}
+    \item \textbf{The Global Feedback Pathway Problem:} Backpropagation of errors often results in a vanishing gradient. This is particularly common in training recurrent neural networks, which is  often resolved by unfolding the model backwards across time which violates biological plausibility.
+    \item \textbf{The Weight Transport Problem:} Backprop's use of the same parameter matrix for the forward and backward pass implies that the same synaptic connections are used to pass information forward and to receive error messages. This contrasts with the predictive coding literature in neuroscience which shows that neurons have two sets of synapses: one excitatory synapse that passes state information up to the next layer and one inhibitory synapse that passes error information down to the previous layer \cite{WhittingtonBogacz19}.
+    \item \textbf{The Problem of Locality and Locking:} Synaptic updating under backprop would imply that neurons wait for error information from a gloabl cost function and thus the activity of a neuron in a given layer is dependent on the behavior of neurons at all layers even if they are far away. This violoates the principle of locality in synaptic plasticity, which states that ``all information a synapse needs to update its state (e.g. its synaptic weight) is directly accessible in space and immediately accessible in time \cite{Khacef23}.
+    \item \textbf{The Problem of Constraint and Sensitivity:}
+    \item \textbf{The Problem of Short-Term Plasticity:}
+    \item \textbf{The Inference Dependency Problem:}
+\end{enumerate}
+
+
+\subsection{Predictive Processing}
+For a thorough review of predictive processing from theoretical and empirical perspectives we recommend the reader to see \cite{Millidge22}. 
+
+\subsubsection{Theory}
+Predictive processing theory in neuroscience argues that the brain learns representations of the world neither in a purely bottom-up nor a purely top-down manner\footnote{Interestingly, recent research in category theoretic foundations of deep learning noted that most current frameworks are either top-down or bottom-up\cite{}}. Rather, layers communicate to each other in a language of prediction and surprise. This leads to an important distinction in what spikes represent conceptually. Rather than spike rates representing the intensity of a sensory input, spike rates represent the amount of \textit{new} information that a sensory input brings with it. \cite{Clark15} offers an evolutionary rationale for why the brain would encode information in this way: most of the sensory input an organism receives is noisy and ambiguous. Without top-down predictions to compare with bottom-up inputs organisms would not be able to cope with the uncertainty. 
+
+
+
+\subsubsection{Empirical Evidence}
+Most of the empirical work in predictive processing began in the field of vision: how does sensory input in the retina propagate through the brain, allowing the brain to form meaningful representations of the world? The seminal work establishing the predictive processing theory was \cite{RaoBallard99}. Additional experimental support for predictive processing is cited in \cite{Millidge22, Bastos12}
 \section{Implementation}
 
 Currently, the implementation consists of two components: neuron and layer.
